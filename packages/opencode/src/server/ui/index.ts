@@ -16,10 +16,23 @@ const DEFAULT_CSP =
 const csp = (hash = "") =>
   `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'${hash ? ` 'sha256-${hash}'` : ""}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; media-src 'self' data:; connect-src 'self' data:`
 
-export const UIRoutes = (): Hono =>
+function rewriteHtml(html: string, basePath: string) {
+  const b = !basePath ? "/" : basePath.endsWith("/") ? basePath : basePath + "/"
+  let injection = `<head><base href="${b}">`
+  if (basePath) {
+    injection += `<script>window.OPENCODE_BASE_PATH = ${JSON.stringify(basePath)};</script>`
+  }
+  return html.replace("<head>", injection)
+}
+
+export const UIRoutes = (basePath: string = ""): Hono =>
   new Hono().all("/*", async (c) => {
     const embeddedWebUI = await embeddedUIPromise
-    const path = c.req.path
+    let path = c.req.path
+    if (basePath && path.startsWith(basePath)) {
+      path = path.slice(basePath.length)
+    }
+    if (!path.startsWith("/")) path = "/" + path
 
     if (embeddedWebUI) {
       const match = embeddedWebUI[path.replace(/^\//, "")] ?? embeddedWebUI["index.html"] ?? null
@@ -30,6 +43,9 @@ export const UIRoutes = (): Hono =>
         c.header("Content-Type", mime)
         if (mime.startsWith("text/html")) {
           c.header("Content-Security-Policy", DEFAULT_CSP)
+          let html = await fs.readFile(match, "utf8")
+          html = rewriteHtml(html, basePath)
+          return c.html(html)
         }
         return c.body(new Uint8Array(await fs.readFile(match)))
       } else {
@@ -43,13 +59,19 @@ export const UIRoutes = (): Hono =>
           host: "app.opencode.ai",
         },
       })
-      const match = response.headers.get("content-type")?.includes("text/html")
-        ? (await response.clone().text()).match(
-            /<script\b(?![^>]*\bsrc\s*=)[^>]*\bid=(['"])oc-theme-preload-script\1[^>]*>([\s\S]*?)<\/script>/i,
-          )
-        : undefined
-      const hash = match ? createHash("sha256").update(match[2]).digest("base64") : ""
-      response.headers.set("Content-Security-Policy", csp(hash))
+      if (response.headers.get("content-type")?.includes("text/html")) {
+        let body = await response.text()
+        body = rewriteHtml(body, basePath)
+        const match = body.match(
+          /<script\b(?![^>]*\bsrc\s*=)[^>]*\bid=(['"])oc-theme-preload-script\1[^>]*>([\s\S]*?)<\/script>/i,
+        )
+        const hash = match ? createHash("sha256").update(match[2]).digest("base64") : ""
+        response.headers.set("Content-Security-Policy", csp(hash))
+        return c.html(body, {
+          status: response.status,
+          headers: response.headers,
+        } as any)
+      }
       return response
     }
   })

@@ -13,6 +13,10 @@ const options = {
     describe: "hostname to listen on",
     default: "127.0.0.1",
   },
+  "base-path": {
+    type: "string" as const,
+    describe: "base path for the web interface and API (e.g., /service/opencode)",
+  },
   mdns: {
     type: "boolean" as const,
     describe: "enable mDNS service discovery (defaults hostname to 0.0.0.0)",
@@ -41,6 +45,7 @@ export async function resolveNetworkOptions(args: NetworkOptions) {
   const config = await AppRuntime.runPromise(Config.Service.use((cfg) => cfg.getGlobal()))
   const portExplicitlySet = process.argv.includes("--port")
   const hostnameExplicitlySet = process.argv.includes("--hostname")
+  const basePathExplicitlySet = process.argv.includes("--base-path")
   const mdnsExplicitlySet = process.argv.includes("--mdns")
   const mdnsDomainExplicitlySet = process.argv.includes("--mdns-domain")
   const corsExplicitlySet = process.argv.includes("--cors")
@@ -53,9 +58,10 @@ export async function resolveNetworkOptions(args: NetworkOptions) {
     : mdns && !config?.server?.hostname
       ? "0.0.0.0"
       : (config?.server?.hostname ?? args.hostname)
+  const basePath = basePathExplicitlySet ? args["base-path"] : (config?.server?.basePath ?? args["base-path"])
   const configCors = config?.server?.cors ?? []
   const argsCors = Array.isArray(args.cors) ? args.cors : args.cors ? [args.cors] : []
   const cors = [...configCors, ...argsCors]
 
-  return { hostname, port, mdns, mdnsDomain, cors }
+  return { hostname, port, basePath, mdns, mdnsDomain, cors }
 }

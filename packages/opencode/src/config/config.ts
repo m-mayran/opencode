@@ -734,6 +734,7 @@ export namespace Config {
       mdns: z.boolean().optional().describe("Enable mDNS service discovery"),
       mdnsDomain: z.string().optional().describe("Custom domain name for mDNS service (default: opencode.local)"),
       cors: z.array(z.string()).optional().describe("Additional domains to allow for CORS"),
+      basePath: z.string().optional().describe("Base path for the web interface and API"),
     })
     .strict()
     .meta({

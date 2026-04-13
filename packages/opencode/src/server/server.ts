@@ -27,9 +27,12 @@ export namespace Server {
 
   export const Default = lazy(() => create({}))
 
-  function create(opts: { cors?: string[] }) {
+  function create(opts: { cors?: string[]; basePath?: string }) {
     const app = new Hono()
     const runtime = adapter.create(app)
+    const basePath = opts.basePath?.replace(/\/+$/, "") ?? ""
+    const prefix = basePath.startsWith("/") ? basePath : basePath ? `/${basePath}` : ""
+
     return {
       app: app
         .onError(ErrorMiddleware)
@@ -37,9 +40,9 @@ export namespace Server {
         .use(LoggerMiddleware)
         .use(CompressionMiddleware)
         .use(CorsMiddleware(opts))
-        .route("/", ControlPlaneRoutes())
-        .route("/", InstanceRoutes(runtime.upgradeWebSocket))
-        .route("/", UIRoutes()),
+        .route(prefix || "/", ControlPlaneRoutes())
+        .route(prefix || "/", InstanceRoutes(runtime.upgradeWebSocket))
+        .route(prefix || "/", UIRoutes(prefix)),
       runtime,
     }
   }
@@ -68,6 +71,7 @@ export namespace Server {
   export async function listen(opts: {
     port: number
     hostname: string
+    basePath?: string
     mdns?: boolean
     mdnsDomain?: string
     cors?: string[]

@@ -50,7 +50,8 @@ export const AuthMiddleware: MiddlewareHandler = (c, next) => {
 }
 
 export const LoggerMiddleware: MiddlewareHandler = async (c, next) => {
-  const skip = c.req.path === "/log"
+  const path = c.req.path
+  const skip = path === "/log" || path.endsWith("/log")
   if (!skip) {
     log.info("request", {
       method: c.req.method,
@@ -86,7 +87,15 @@ const zipped = compress()
 export const CompressionMiddleware: MiddlewareHandler = (c, next) => {
   const path = c.req.path
   const method = c.req.method
-  if (path === "/event" || path === "/global/event" || path === "/global/sync-event") return next()
+  if (
+    path === "/event" ||
+    path.endsWith("/event") ||
+    path === "/global/event" ||
+    path.endsWith("/global/event") ||
+    path === "/global/sync-event" ||
+    path.endsWith("/global/sync-event")
+  )
+    return next()
   if (method === "POST" && /\/session\/[^/]+\/(message|prompt_async)$/.test(path)) return next()
   return zipped(c, next)
 }

@@ -241,7 +241,7 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
         <p class="mt-1 text-12-regular text-text-weak">{language.t("app.server.retrying")}</p>
       </div>
       <Show when={others().length > 0}>
-        <div class="flex flex-col gap-2 w-full max-w-sm">
+        <div class="flex flex-col gap-2 w-full max-sm:max-w-sm">
           <span class="text-12-regular text-text-base text-center">{language.t("app.server.otherServers")}</span>
           <div class="flex flex-col gap-1 bg-surface-base rounded-lg p-2">
             <For each={others()}>
@@ -293,6 +293,7 @@ export function AppInterface(props: {
             <GlobalSyncProvider>
               <Dynamic
                 component={props.router ?? Router}
+                base={(window as any).OPENCODE_BASE_PATH}
                 root={(routerProps) => <RouterRoot appChildren={props.children}>{routerProps.children}</RouterRoot>}
               >
                 <Route path="/" component={HomeRoute} />
