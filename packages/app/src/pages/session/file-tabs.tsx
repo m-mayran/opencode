@@ -4,6 +4,7 @@ import { Dynamic } from "solid-js/web"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import type { FileSearchHandle } from "@opencode-ai/ui/file"
 import { useFileComponent } from "@opencode-ai/ui/context/file"
+import { isNotebookPath, NotebookViewer } from "@opencode-ai/ui/notebook-viewer"
 import { cloneSelectedLineRange, previewSelectedLines } from "@opencode-ai/ui/pierre/selection-bridge"
 import { createLineCommentController } from "@opencode-ai/ui/line-comment-annotations"
 import { sampledChecksum } from "@opencode-ai/util/encode"
@@ -400,51 +401,60 @@ export function FileTabContent(props: { tab: string }) {
     scrollSync.queueRestore()
   })
 
-  const renderFile = (source: string) => (
-    <div class="relative overflow-hidden pb-40">
-      <Dynamic
-        component={fileComponent}
-        mode="text"
-        file={{
-          name: path() ?? "",
-          contents: source,
-          cacheKey: cacheKey(),
-        }}
-        enableLineSelection
-        enableHoverUtility
-        selectedLines={activeSelection()}
-        commentedLines={commentedLines()}
-        onRendered={() => {
-          scrollSync.queueRestore()
-        }}
-        annotations={commentsUi.annotations()}
-        renderAnnotation={commentsUi.renderAnnotation}
-        renderHoverUtility={commentsUi.renderHoverUtility}
-        onLineSelected={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelected(range)
-        }}
-        onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
-        onLineSelectionEnd={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelectionEnd(range)
-        }}
-        search={search}
-        class="select-text"
-        media={{
-          mode: "auto",
-          path: path(),
-          current: state()?.content,
-          onLoad: scrollSync.queueRestore,
-          onError: (args: { kind: "image" | "audio" | "svg" }) => {
-            if (args.kind !== "svg") return
-            showToast({
-              variant: "error",
-              title: language.t("toast.file.loadFailed.title"),
-            })
-          },
-        }}
-      />
-    </div>
-  )
+  const renderFile = (source: string) => {
+    if (isNotebookPath(path())) {
+      return (
+        <div class="relative overflow-hidden pb-40">
+          <NotebookViewer source={source} cacheKey={cacheKey()} />
+        </div>
+      )
+    }
+    return (
+      <div class="relative overflow-hidden pb-40">
+        <Dynamic
+          component={fileComponent}
+          mode="text"
+          file={{
+            name: path() ?? "",
+            contents: source,
+            cacheKey: cacheKey(),
+          }}
+          enableLineSelection
+          enableHoverUtility
+          selectedLines={activeSelection()}
+          commentedLines={commentedLines()}
+          onRendered={() => {
+            scrollSync.queueRestore()
+          }}
+          annotations={commentsUi.annotations()}
+          renderAnnotation={commentsUi.renderAnnotation}
+          renderHoverUtility={commentsUi.renderHoverUtility}
+          onLineSelected={(range: SelectedLineRange | null) => {
+            commentsUi.onLineSelected(range)
+          }}
+          onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
+          onLineSelectionEnd={(range: SelectedLineRange | null) => {
+            commentsUi.onLineSelectionEnd(range)
+          }}
+          search={search}
+          class="select-text"
+          media={{
+            mode: "auto",
+            path: path(),
+            current: state()?.content,
+            onLoad: scrollSync.queueRestore,
+            onError: (args: { kind: "image" | "audio" | "svg" }) => {
+              if (args.kind !== "svg") return
+              showToast({
+                variant: "error",
+                title: language.t("toast.file.loadFailed.title"),
+              })
+            },
+          }}
+        />
+      </div>
+    )
+  }
 
   return (
     <Tabs.Content value={props.tab} class="mt-3 relative h-full">
