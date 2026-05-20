@@ -7,7 +7,7 @@ import { useFileComponent } from "@opencode-ai/ui/context/file"
 import { isNotebookPath, NotebookViewer } from "@opencode-ai/ui/notebook-viewer"
 import { cloneSelectedLineRange, previewSelectedLines } from "@opencode-ai/ui/pierre/selection-bridge"
 import { createLineCommentController } from "@opencode-ai/ui/line-comment-annotations"
-import { sampledChecksum } from "@opencode-ai/util/encode"
+import { sampledChecksum } from "@opencode-ai/core/util/encode"
 import { DropdownMenu } from "@opencode-ai/ui/dropdown-menu"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { Tabs } from "@opencode-ai/ui/tabs"
@@ -378,12 +378,6 @@ export function FileTabContent(props: { tab: string }) {
     commentsUi.note.openComment(target.id, target.selection, { cancelDraft: true })
     requestAnimationFrame(() => comments.clearFocus())
   })
-
-  const cancelCommenting = () => {
-    const p = path()
-    if (p) file.setSelectedLines(p, null)
-    setNote("commenting", null)
-  }
 
   let prev = {
     loaded: false,
