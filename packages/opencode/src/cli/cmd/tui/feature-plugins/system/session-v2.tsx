@@ -24,7 +24,6 @@ import type {
   SessionMessageCompaction,
   SessionMessageModelSwitched,
   SessionMessageShell,
-  SessionMessageSynthetic,
   SessionMessageUser,
   ToolFileContent,
   ToolTextContent,
@@ -416,7 +415,7 @@ function AssistantReasoning(props: {
               drawUnstyledText={false}
               streaming={true}
               syntaxStyle={props.subtleSyntax}
-              content={(inMinimal() ? "- " : "") + "_Thinking:_ " + content()}
+              content={(inMinimal() ? "- " : "") + (isDone() ? "_Thought:_ " : "_Thinking:_ ") + content()}
               conceal={true}
               fg={theme.textMuted}
             />
@@ -442,9 +441,7 @@ function CollapsedReasoningText(props: { title: string | null }) {
 
   return (
     <text fg={theme.warning} wrapMode="none">
-      <span style={{ fg: theme.warning, italic: true }}>
-        {props.title ? "+ Thought · " + props.title : "+ Thought"}
-      </span>
+      <span style={{ fg: theme.warning, italic: true }}>{props.title ? "+ Thought: " + props.title : "+ Thought"}</span>
     </text>
   )
 }
