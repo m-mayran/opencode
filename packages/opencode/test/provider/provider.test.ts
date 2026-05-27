@@ -282,9 +282,10 @@ it.instance(
     expect(providers[ProviderID.anthropic]).toBeDefined()
     // Config options should be merged
     expect(providers[ProviderID.anthropic].options.timeout).toBe(60000)
+    expect(providers[ProviderID.anthropic].options.headerTimeout).toBe(10000)
     expect(providers[ProviderID.anthropic].options.chunkTimeout).toBe(15000)
   }),
-  { config: { provider: { anthropic: { options: { timeout: 60000, chunkTimeout: 15000 } } } } },
+  { config: { provider: { anthropic: { options: { timeout: 60000, headerTimeout: 10000, chunkTimeout: 15000 } } } } },
 )
 
 it.instance("getModel returns model for valid provider/model", () =>
@@ -349,6 +350,16 @@ it.instance(
     expect(String(model.modelID)).toBe("claude-sonnet-4-20250514")
   }),
   { config: { model: "anthropic/claude-sonnet-4-20250514" } },
+)
+
+it.instance(
+  "defaultModel returns a typed error when config excludes every provider",
+  Effect.gen(function* () {
+    const error = yield* Provider.use.defaultModel().pipe(Effect.flip)
+    expect(error).toBeInstanceOf(Provider.NoProvidersError)
+    expect(error._tag).toBe("ProviderNoProvidersError")
+  }),
+  { config: { enabled_providers: [] } },
 )
 
 it.instance(
